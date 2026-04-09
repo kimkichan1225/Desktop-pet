@@ -150,32 +150,6 @@ function applyColors(hue) {
     }
   }
 
-  // 0-a) 외곽선 바로 안쪽 → 진한 하늘색으로
-  for(let y=0;y<25;y++){
-    for(let x=0;x<30;x++){
-      const c=G[y][x];
-      // 외곽선이 아닌 픽셀 중
-      if(c[0]===P.outline[0] && c[1]===P.outline[1] && c[2]===P.outline[2]) continue;
-      const br=(c[0]+c[1]+c[2])/3;
-      if(br<50 || br>=220) continue;
-      // 주변에 외곽선이 있는지 확인
-      let nearOutline=false;
-      for(let dy=-1;dy<=1;dy++){
-        for(let dx=-1;dx<=1;dx++){
-          if(dy===0&&dx===0) continue;
-          const ny=y+dy, nx=x+dx;
-          if(ny<0||ny>=25||nx<0||nx>=30) continue;
-          const nc=G[ny][nx];
-          if(nc[0]===P.outline[0] && nc[1]===P.outline[1] && nc[2]===P.outline[2]) nearOutline=true;
-        }
-      }
-      // 외곽선 옆이고, 광택/눈/입/볼 영역이 아니면 → 진한 하늘
-      if(nearOutline && !(y>=3 && y<=9 && x>=5 && x<=12) && !(y>=10 && y<=15 && x>=6 && x<=23)){
-        G[y][x]=[...P.mid];
-      }
-    }
-  }
-
   // 0-b) 중간색 (밝기 130~170)
   for(let y=0;y<25;y++){
     for(let x=0;x<30;x++){
@@ -225,6 +199,44 @@ function applyColors(hue) {
   G[6][7]=[...P.highlight]; G[6][8]=[...P.highlight]; G[6][9]=[...P.highlight];
   G[8][6]=[...P.highlight];
   G[9][6]=[...P.highlight];
+
+  // 7) 잡색 정리: 위 6색 어디에도 안 속하는 픽셀 → mid
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br<1 || br>=220) continue;
+      const eq=(a,b)=>a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2];
+      if(eq(c,P.outline)) continue;
+      if(eq(c,P.mid)) continue;
+      if(eq(c,P.body)) continue;
+      if(eq(c,P.highlight)) continue;
+      if(eq(c,P.eye)) continue;
+      if(eq(c,P.cheek)) continue;
+      G[y][x]=[...P.mid];
+    }
+  }
+
+  // 8) 외곽선 2칸 이내의 body → mid (하단+양옆만, 위쪽은 밝게 유지)
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      if(!(c[0]===P.body[0]&&c[1]===P.body[1]&&c[2]===P.body[2])) continue;
+      if(y>=3 && y<=9 && x>=5 && x<=12) continue;
+      if(y>=10 && y<=15 && x>=6 && x<=23) continue;
+      if(y<11) continue; // 위쪽은 건너뜀 (밝은 영역 유지)
+      let nearOutline=false;
+      for(let dy=-2;dy<=2;dy++){
+        for(let dx=-2;dx<=2;dx++){
+          const ny=y+dy, nx=x+dx;
+          if(ny<0||ny>=25||nx<0||nx>=30) continue;
+          const nc=G[ny][nx];
+          if(nc[0]===P.outline[0]&&nc[1]===P.outline[1]&&nc[2]===P.outline[2]) nearOutline=true;
+        }
+      }
+      if(nearOutline) G[y][x]=[...P.mid];
+    }
+  }
 }
 
 // 먹기/잠자기 스프라이트 생성
