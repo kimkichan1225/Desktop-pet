@@ -90,6 +90,33 @@ for(let y=14;y<=15;y++){
   for(let x=21;x<=23;x++) G[y][x] = [...CHEEK];
 }
 
+// 5) 몸 메인색 통일 (눈/입/볼/광택/외곽 제외)
+const BODY_MAIN = [128,188,250];
+for(let y=0;y<25;y++){
+  for(let x=0;x<30;x++){
+    const c=G[y][x];
+    const br=(c[0]+c[1]+c[2])/3;
+    if(br>=170 && br<=215 && c[2]>230 && c[1]>165){
+      G[y][x]=[...BODY_MAIN];
+    }
+  }
+}
+
+// 6) 하이라이트 단일색 정리
+const HL = [185, 235, 250];
+// row 3: col 10~11
+G[3][10]=[...HL]; G[3][11]=[...HL];
+// row 4: col 9~11
+G[4][9]=[...HL]; G[4][10]=[...HL]; G[4][11]=[...HL];
+// row 5: col 7~10
+G[5][7]=[...HL]; G[5][8]=[...HL]; G[5][9]=[...HL]; G[5][10]=[...HL];
+// row 6: col 7~9
+G[6][7]=[...HL]; G[6][8]=[...HL]; G[6][9]=[...HL];
+// row 8: col 6
+G[8][6]=[...HL];
+// row 9: col 6
+G[9][6]=[...HL];
+
 const cvs = document.getElementById('my-canvas');
 cvs.width = 30;
 cvs.height = 25;
