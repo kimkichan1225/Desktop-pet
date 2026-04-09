@@ -79,6 +79,17 @@ G[13][16]=[...BODY]; G[13][11]=[...BODY]; G[13][13]=[...BODY];
 G[14][12]=[...BODY]; G[14][17]=[...BODY];
 G[15][13]=[...BODY]; G[15][14]=[...BODY]; G[15][15]=[...BODY]; G[15][16]=[...BODY];
 
+// 4) 볼터치 2x3 단일색 (가로3 x 세로2)
+const CHEEK = [230, 150, 180];
+// 왼쪽 볼 (col 6~8, row 14~15)
+for(let y=14;y<=15;y++){
+  for(let x=6;x<=8;x++) G[y][x] = [...CHEEK];
+}
+// 오른쪽 볼 (col 21~23, row 14~15)
+for(let y=14;y<=15;y++){
+  for(let x=21;x<=23;x++) G[y][x] = [...CHEEK];
+}
+
 const cvs = document.getElementById('my-canvas');
 cvs.width = 30;
 cvs.height = 25;
