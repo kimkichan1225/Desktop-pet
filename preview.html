@@ -25,8 +25,12 @@
     <div class="label">내 슬라임 (30x25)</div>
   </div>
   <div class="ref">
-    <canvas id="anim-canvas"></canvas>
-    <div class="label">대기 애니메이션</div>
+    <canvas id="anim-idle"></canvas>
+    <div class="label">대기 (말랑말랑)</div>
+  </div>
+  <div class="ref">
+    <canvas id="anim-move"></canvas>
+    <div class="label">이동 (도잉도잉)</div>
   </div>
 </div>
 
@@ -180,8 +184,9 @@ function drawSprite(canvas, grid, scale) {
 const staticCvs = document.getElementById('my-canvas');
 drawSprite(staticCvs, G, 5);
 
-// 대기 애니메이션 캔버스
-const animCvs = document.getElementById('anim-canvas');
+// 애니메이션 캔버스
+const idleCvs = document.getElementById('anim-idle');
+const moveCvs = document.getElementById('anim-move');
 let tick = 0;
 
 // 스프라이트 변형: 행 복제/삭제로 세로 늘리기/줄이기, 열 복제/삭제로 가로
@@ -239,54 +244,79 @@ function drawGrid(ctx, grid, ox, oy) {
   }
 }
 
-function animIdle() {
+// ===== 대기 애니메이션: 제자리 말랑말랑 =====
+function animIdleLoop() {
   tick++;
   const rows = G.length;
   const cols = G[0].length;
 
-  // 6단계 도잉도잉 (각 8프레임)
-  const frame = Math.floor(tick / 11) % 6;
+  // 4단계 부드러운 말랑 (각 15프레임)
+  const frame = Math.floor(tick / 15) % 4;
 
-  const W = cols + 6, H = rows + 10;
-  animCvs.width = W;
-  animCvs.height = H;
-  animCvs.style.width = W * 5 + 'px';
-  animCvs.style.height = H * 5 + 'px';
-  const ctx = animCvs.getContext('2d');
+  const W = cols + 4, H = rows + 4;
+  idleCvs.width = W;
+  idleCvs.height = H;
+  idleCvs.style.width = W * 5 + 'px';
+  idleCvs.style.height = H * 5 + 'px';
+  const ctx = idleCvs.getContext('2d');
   ctx.clearRect(0, 0, W, H);
 
-  let grid, ox = 3, oy = 5;
+  let grid, ox = 2, oy = 2;
 
   if(frame === 0) {
-    // 원위치
     grid = G;
   } else if(frame === 1) {
-    // 위로 늘어남: 세로+2, 가로-2
-    grid = transformGrid(G, 2, -2);
-    ox = 4; oy = 3;
-  } else if(frame === 2) {
-    // 점프: 원본 그대로 위로 이동
-    grid = G;
-    oy = 1;
-  } else if(frame === 3) {
-    // 내려옴
-    grid = G;
-    oy = 4;
-  } else if(frame === 4) {
-    // 찌그러짐: 세로-2, 가로+2
-    grid = transformGrid(G, -2, 2);
-    ox = 2; oy = 7;
-  } else {
-    // 복귀 중: 세로+1
+    // 살짝 세로로 늘어남
     grid = transformGrid(G, 1, 0);
-    oy = 4;
+    oy = 1;
+  } else if(frame === 2) {
+    grid = G;
+  } else {
+    // 살짝 가로로 넓어짐
+    grid = transformGrid(G, -1, 1);
+    ox = 1; oy = 3;
   }
 
   drawGrid(ctx, grid, ox, oy);
-  requestAnimationFrame(animIdle);
+
+  // ===== 이동 애니메이션: 도잉도잉 점프 =====
+  const mframe = Math.floor(tick / 11) % 6;
+
+  const MW = cols + 6, MH = rows + 10;
+  moveCvs.width = MW;
+  moveCvs.height = MH;
+  moveCvs.style.width = MW * 5 + 'px';
+  moveCvs.style.height = MH * 5 + 'px';
+  const mctx = moveCvs.getContext('2d');
+  mctx.clearRect(0, 0, MW, MH);
+
+  let mgrid, mox = 3, moy = 5;
+
+  if(mframe === 0) {
+    mgrid = G;
+  } else if(mframe === 1) {
+    mgrid = transformGrid(G, 2, -2);
+    mox = 4; moy = 3;
+  } else if(mframe === 2) {
+    mgrid = G;
+    moy = 2;
+  } else if(mframe === 3) {
+    mgrid = G;
+    moy = 4;
+  } else if(mframe === 4) {
+    mgrid = transformGrid(G, -2, 2);
+    mox = 2; moy = 7;
+  } else {
+    mgrid = transformGrid(G, 1, 0);
+    moy = 4;
+  }
+
+  drawGrid(mctx, mgrid, mox, moy);
+
+  requestAnimationFrame(animIdleLoop);
 }
 
-animIdle();
+animIdleLoop();
 </script>
 </body>
 </html>
