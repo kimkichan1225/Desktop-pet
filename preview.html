@@ -14,15 +14,25 @@
 </style>
 </head>
 <body>
-<h1>레퍼런스 vs 내 슬라임</h1>
+<h1>슬라임 색상 커스터마이징</h1>
+<div style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+  <button onclick="setColor(210)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#6EB5FF;cursor:pointer" title="파랑"></button>
+  <button onclick="setColor(0)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#FF6E6E;cursor:pointer" title="빨강"></button>
+  <button onclick="setColor(130)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#6EFF8E;cursor:pointer" title="초록"></button>
+  <button onclick="setColor(270)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#B56EFF;cursor:pointer" title="보라"></button>
+  <button onclick="setColor(45)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#FFB56E;cursor:pointer" title="주황"></button>
+  <button onclick="setColor(170)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#6EE5FF;cursor:pointer" title="하늘"></button>
+  <button onclick="setColor(330)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#FF6EB5;cursor:pointer" title="핑크"></button>
+  <button onclick="setColor(60)" style="width:40px;height:40px;border-radius:50%;border:2px solid #ccc;background:#FFFF6E;cursor:pointer" title="노랑"></button>
+</div>
 <div class="row">
   <div class="ref">
-    <img src="C:/Users/User/Pictures/Screenshots/스크린샷 2026-04-09 090712.png" style="width:150px;height:150px;object-fit:contain;image-rendering:pixelated">
-    <div class="label">레퍼런스 (원본)</div>
+    <canvas id="egg-canvas"></canvas>
+    <div class="label">알</div>
   </div>
   <div class="ref">
     <canvas id="my-canvas"></canvas>
-    <div class="label">내 슬라임 (30x25)</div>
+    <div class="label">슬라임</div>
   </div>
   <div class="ref">
     <canvas id="anim-idle"></canvas>
@@ -76,123 +86,245 @@ const G=[
 [[245,245,245],[245,245,245],[245,245,245],[245,245,245],[245,245,245],[245,245,245],[237,240,242],[144,118,156],[101,52,115],[97,47,114],[101,50,118],[105,55,122],[106,56,122],[103,54,121],[102,54,120],[102,54,121],[103,54,121],[100,52,118],[95,46,112],[94,46,111],[92,45,109],[92,45,110],[150,133,167],[217,224,228],[241,243,243],[245,245,245],[245,245,245],[245,245,245],[245,245,245],[245,245,245]],
 ];
 
-// 0) 제일 바깥 외곽선 → 진한 보라
-const OUTLINE = [80,35,110];
-for(let y=0;y<25;y++){
-  for(let x=0;x<30;x++){
-    const c=G[y][x];
-    const br=(c[0]+c[1]+c[2])/3;
-    if(br>=220 || br===0) continue;
-    // 주변 8방향에 배경(>220) 또는 캔버스 밖이 있으면 외곽
-    let nearBg=false;
-    for(let dy=-1;dy<=1;dy++){
-      for(let dx=-1;dx<=1;dx++){
-        const ny=y+dy, nx=x+dx;
-        if(ny<0||ny>=25||nx<0||nx>=30){nearBg=true;continue;}
-        const nc=G[ny][nx];
-        if((nc[0]+nc[1]+nc[2])/3>=220) nearBg=true;
+// ======== HSL 유틸 ========
+function hsl2rgb(h,s,l){
+  h=((h%360)+360)%360;s/=100;l/=100;
+  const a=s*Math.min(l,1-l);
+  const f=n=>{const k=(n+h/30)%12;return Math.round((l-a*Math.max(Math.min(k-3,9-k,1),-1))*255);};
+  return [f(0),f(8),f(4)];
+}
+
+// ======== 색상 팔레트 생성 (hue 기반) ========
+let currentHue = 210; // 기본 파랑
+
+function makePalette(hue) {
+  return {
+    outline:   hsl2rgb(hue+20, 60, 28),    // 외곽선 (진하고 어두운)
+    mid:       hsl2rgb(hue, 70, 62),        // 중간색
+    body:      hsl2rgb(hue, 85, 74),        // 몸 메인
+    highlight: hsl2rgb(hue-10, 70, 85),     // 하이라이트
+    eye:       hsl2rgb(hue+20, 60, 23),     // 눈/입
+    cheek:     hsl2rgb(hue-150, 70, 75),    // 볼터치 (보색 계열)
+  };
+}
+
+// ======== 스프라이트에 색상 적용 ========
+function applyColors(hue) {
+  const P = makePalette(hue);
+
+  // -1) 전체 좌우 대칭 (오른쪽 기준 → 왼쪽 복사, 광택 영역 제외)
+  for(let y=0;y<25;y++){
+    for(let x=0;x<15;x++){
+      const mx = 29 - x;
+      // 광택 영역 (row 3~9, col 5~12)은 건너뜀
+      if(y>=3 && y<=9 && x>=5 && x<=12) continue;
+      G[y][x] = [...G[y][mx]];
+    }
+  }
+
+  // 0-pre) 외곽선과 몸 사이 연한색 → 테두리색으로 합침
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br>=215 && br<240) G[y][x]=[...P.outline];
+    }
+  }
+
+  // 0) 외곽선
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br>=220 || br===0) continue;
+      let nearBg=false;
+      for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+          const ny=y+dy, nx=x+dx;
+          if(ny<0||ny>=25||nx<0||nx>=30){nearBg=true;continue;}
+          const nc=G[ny][nx];
+          if((nc[0]+nc[1]+nc[2])/3>=220) nearBg=true;
+        }
+      }
+      if(nearBg && !(y>=3 && y<=9 && x>=6 && x<=12)) G[y][x]=[...P.outline];
+    }
+  }
+
+  // 0-a) 외곽선 바로 안쪽 → 진한 하늘색으로
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      // 외곽선이 아닌 픽셀 중
+      if(c[0]===P.outline[0] && c[1]===P.outline[1] && c[2]===P.outline[2]) continue;
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br<50 || br>=220) continue;
+      // 주변에 외곽선이 있는지 확인
+      let nearOutline=false;
+      for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+          if(dy===0&&dx===0) continue;
+          const ny=y+dy, nx=x+dx;
+          if(ny<0||ny>=25||nx<0||nx>=30) continue;
+          const nc=G[ny][nx];
+          if(nc[0]===P.outline[0] && nc[1]===P.outline[1] && nc[2]===P.outline[2]) nearOutline=true;
+        }
+      }
+      // 외곽선 옆이고, 광택/눈/입/볼 영역이 아니면 → 진한 하늘
+      if(nearOutline && !(y>=3 && y<=9 && x>=5 && x<=12) && !(y>=10 && y<=15 && x>=6 && x<=23)){
+        G[y][x]=[...P.mid];
       }
     }
-    // 하이라이트 영역(row 3~9, col 6~11)은 제외
-    if(nearBg && !(y>=3 && y<=9 && x>=6 && x<=12)) G[y][x]=[...OUTLINE];
   }
+
+  // 0-b) 중간색 (밝기 130~170)
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br>=130 && br<170 && br>0) G[y][x]=[...P.mid];
+    }
+  }
+
+  // 1) 대칭
+  for(let y=10;y<=15;y++){
+    for(let x=6;x<=14;x++) G[y][29-x]=[...G[y][x]];
+  }
+
+  // 2) 눈 3x3
+  for(let y=10;y<=12;y++){
+    for(let x=8;x<=10;x++) G[y][x]=[...P.eye];
+    for(let x=19;x<=21;x++) G[y][x]=[...P.eye];
+  }
+
+  // 3) 입 + 주변 몸색
+  G[13][12]=[...P.eye]; G[13][17]=[...P.eye];
+  G[14][13]=[...P.eye]; G[14][14]=[...P.eye]; G[14][15]=[...P.eye]; G[14][16]=[...P.eye];
+  G[13][16]=[...P.body]; G[13][11]=[...P.body]; G[13][13]=[...P.body];
+  G[14][12]=[...P.body]; G[14][17]=[...P.body];
+  G[15][13]=[...P.body]; G[15][14]=[...P.body]; G[15][15]=[...P.body]; G[15][16]=[...P.body];
+
+  // 4) 볼터치
+  for(let y=14;y<=15;y++){
+    for(let x=6;x<=8;x++) G[y][x]=[...P.cheek];
+    for(let x=21;x<=23;x++) G[y][x]=[...P.cheek];
+  }
+
+  // 5) 몸 메인
+  for(let y=0;y<25;y++){
+    for(let x=0;x<30;x++){
+      const c=G[y][x];
+      const br=(c[0]+c[1]+c[2])/3;
+      if(br>=170 && br<=215) G[y][x]=[...P.body];
+    }
+  }
+
+  // 6) 하이라이트
+  G[3][10]=[...P.highlight]; G[3][11]=[...P.highlight];
+  G[4][9]=[...P.highlight]; G[4][10]=[...P.highlight]; G[4][11]=[...P.highlight];
+  G[5][7]=[...P.highlight]; G[5][8]=[...P.highlight]; G[5][9]=[...P.highlight]; G[5][10]=[...P.highlight];
+  G[6][7]=[...P.highlight]; G[6][8]=[...P.highlight]; G[6][9]=[...P.highlight];
+  G[8][6]=[...P.highlight];
+  G[9][6]=[...P.highlight];
 }
 
-// 0-b) 중간 파란색 통일
-const MID_BLUE = [87,143,231];
-for(let y=0;y<25;y++){
-  for(let x=0;x<30;x++){
-    const c=G[y][x];
-    const br=(c[0]+c[1]+c[2])/3;
-    if(br>=130 && br<170 && c[2]>200){
-      G[y][x]=[...MID_BLUE];
+// 먹기/잠자기 스프라이트 생성
+function makeVariants() {
+  const P = makePalette(currentHue);
+  const EC = P.eye;
+  const BD = P.body;
+
+  const eatGrid = G.map(r=>r.map(c=>[...c]));
+  for(let x=8;x<=10;x++){ eatGrid[10][x]=[...EC]; eatGrid[11][x]=[...BD]; eatGrid[12][x]=[...BD]; }
+  for(let x=19;x<=21;x++){ eatGrid[10][x]=[...EC]; eatGrid[11][x]=[...BD]; eatGrid[12][x]=[...BD]; }
+  eatGrid[13][12]=[...BD]; eatGrid[13][17]=[...BD];
+  eatGrid[13][13]=[...EC]; eatGrid[13][14]=[...EC]; eatGrid[13][15]=[...EC]; eatGrid[13][16]=[...EC];
+  eatGrid[14][12]=[...EC]; eatGrid[14][17]=[...EC];
+  eatGrid[14][13]=[...EC]; eatGrid[14][14]=[...EC]; eatGrid[14][15]=[...EC]; eatGrid[14][16]=[...EC];
+  eatGrid[15][13]=[...EC]; eatGrid[15][14]=[...EC]; eatGrid[15][15]=[...EC]; eatGrid[15][16]=[...EC];
+
+  const sleepGrid = G.map(r=>r.map(c=>[...c]));
+  for(let x=8;x<=10;x++){ sleepGrid[10][x]=[...BD]; sleepGrid[11][x]=[...EC]; sleepGrid[12][x]=[...BD]; }
+  for(let x=19;x<=21;x++){ sleepGrid[10][x]=[...BD]; sleepGrid[11][x]=[...EC]; sleepGrid[12][x]=[...BD]; }
+  sleepGrid[13][12]=[...BD]; sleepGrid[13][17]=[...BD];
+  sleepGrid[14][13]=[...BD]; sleepGrid[14][14]=[...BD]; sleepGrid[14][15]=[...BD]; sleepGrid[14][16]=[...BD];
+
+  return { eat: eatGrid, sleep: sleepGrid };
+}
+let variants = null;
+
+// 원본 그리드 백업
+const G_ORIGINAL = G.map(r=>r.map(c=>[...c]));
+
+// ======== 알 스프라이트 생성 (hue 기반) ========
+function makeEgg(hue) {
+  const P = makePalette(hue);
+  const O = P.outline;
+  const B = P.body;
+  const H = P.highlight;
+  const M = P.mid;
+  const _ = [0,0,0]; // 투명
+  // 16x20 알 모양
+  return [
+    [_,_,_,_,_,_,O,O,O,O,_,_,_,_,_,_],
+    [_,_,_,_,O,O,M,M,M,M,O,O,_,_,_,_],
+    [_,_,_,O,M,B,B,B,B,B,B,M,O,_,_,_],
+    [_,_,O,M,B,B,H,H,B,B,B,B,M,O,_,_],
+    [_,O,M,B,B,H,H,H,B,B,B,B,B,M,O,_],
+    [_,O,M,B,H,H,B,B,B,B,B,B,B,M,O,_],
+    [O,M,B,B,B,B,B,B,B,B,B,B,B,B,M,O],
+    [O,M,B,B,B,B,B,B,B,B,B,B,B,B,M,O],
+    [O,M,B,B,B,B,B,B,B,B,B,B,B,B,M,O],
+    [O,M,B,B,B,B,B,B,B,B,B,B,B,B,M,O],
+    [O,M,B,B,B,O,O,B,B,B,B,B,B,B,M,O],
+    [O,M,B,B,O,M,B,O,B,B,B,B,B,B,M,O],
+    [O,M,B,B,B,O,O,B,O,O,B,B,B,B,M,O],
+    [O,M,B,B,B,B,B,B,M,B,O,B,B,B,M,O],
+    [_,O,M,B,B,B,B,B,B,O,O,B,B,M,O,_],
+    [_,O,M,B,B,B,B,B,B,B,B,B,B,M,O,_],
+    [_,_,O,M,B,B,B,B,B,B,B,B,M,O,_,_],
+    [_,_,_,O,M,M,B,B,B,B,M,M,O,_,_,_],
+    [_,_,_,_,O,O,M,M,M,M,O,O,_,_,_,_],
+    [_,_,_,_,_,_,O,O,O,O,_,_,_,_,_,_],
+  ];
+}
+
+function drawEgg(hue) {
+  const egg = makeEgg(hue);
+  const cvs = document.getElementById('egg-canvas');
+  const rows = egg.length;
+  const cols = egg[0].length;
+  cvs.width = cols;
+  cvs.height = rows;
+  cvs.style.width = cols * 5 + 'px';
+  cvs.style.height = rows * 5 + 'px';
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0, 0, cols, rows);
+  for(let y = 0; y < rows; y++){
+    for(let x = 0; x < cols; x++){
+      const c = egg[y][x];
+      if(c[0]===0 && c[1]===0 && c[2]===0) continue;
+      ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+      ctx.fillRect(x, y, 1, 1);
     }
   }
 }
 
-// 1) 대칭 먼저
-for(let y=10;y<=15;y++){
-  for(let x=6;x<=14;x++){
-    G[y][29-x] = [...G[y][x]];
-  }
+function rebuildSprites() {
+  for(let y=0;y<G.length;y++)
+    for(let x=0;x<G[0].length;x++)
+      G[y][x] = [...G_ORIGINAL[y][x]];
+  applyColors(currentHue);
+  variants = makeVariants();
+  drawSprite(document.getElementById('my-canvas'), G, 5);
+  drawEgg(currentHue);
 }
 
-// 2) 눈 3x3 (대칭 후에 덮어쓰기)
-const EYE_COLOR = [75, 25, 95];
-for(let y=10;y<=12;y++){
-  for(let x=8;x<=10;x++) G[y][x] = [...EYE_COLOR];
-  for(let x=19;x<=21;x++) G[y][x] = [...EYE_COLOR];
+function setColor(hue) {
+  currentHue = hue;
+  rebuildSprites();
 }
 
-// 3) 입 단일색 + 주변 몸색
-const MC = [...EYE_COLOR];
-const BODY = [128,188,250];
-G[13][12]=MC; G[13][17]=MC;
-G[14][13]=MC; G[14][14]=MC; G[14][15]=MC; G[14][16]=MC;
-G[13][16]=[...BODY]; G[13][11]=[...BODY]; G[13][13]=[...BODY];
-G[14][12]=[...BODY]; G[14][17]=[...BODY];
-G[15][13]=[...BODY]; G[15][14]=[...BODY]; G[15][15]=[...BODY]; G[15][16]=[...BODY];
-
-// 4) 볼터치 2x3 단일색 (가로3 x 세로2)
-const CHEEK = [230, 150, 180];
-// 왼쪽 볼 (col 6~8, row 14~15)
-for(let y=14;y<=15;y++){
-  for(let x=6;x<=8;x++) G[y][x] = [...CHEEK];
-}
-// 오른쪽 볼 (col 21~23, row 14~15)
-for(let y=14;y<=15;y++){
-  for(let x=21;x<=23;x++) G[y][x] = [...CHEEK];
-}
-
-// 5) 몸 메인색 통일 (눈/입/볼/광택/외곽 제외)
-const BODY_MAIN = [128,188,250];
-for(let y=0;y<25;y++){
-  for(let x=0;x<30;x++){
-    const c=G[y][x];
-    const br=(c[0]+c[1]+c[2])/3;
-    if(br>=170 && br<=215 && c[2]>230 && c[1]>165){
-      G[y][x]=[...BODY_MAIN];
-    }
-  }
-}
-
-// 6) 하이라이트 단일색 정리
-const HL = [185, 235, 250];
-// row 3: col 10~11
-G[3][10]=[...HL]; G[3][11]=[...HL];
-// row 4: col 9~11
-G[4][9]=[...HL]; G[4][10]=[...HL]; G[4][11]=[...HL];
-// row 5: col 7~10
-G[5][7]=[...HL]; G[5][8]=[...HL]; G[5][9]=[...HL]; G[5][10]=[...HL];
-// row 6: col 7~9
-G[6][7]=[...HL]; G[6][8]=[...HL]; G[6][9]=[...HL];
-// row 8: col 6
-G[8][6]=[...HL];
-// row 9: col 6
-G[9][6]=[...HL];
-
-// 먹기용 스프라이트 (^^ 눈 + 크게 벌린 입)
-const G_EAT = G.map(r=>r.map(c=>[...c]));
-const EC = [...EYE_COLOR];
-const BD = [128,188,250];
-// ^^ 눈: 윗줄만 남기고 아래 2줄은 몸색
-for(let x=8;x<=10;x++){ G_EAT[10][x]=[...EC]; G_EAT[11][x]=[...BD]; G_EAT[12][x]=[...BD]; }
-for(let x=19;x<=21;x++){ G_EAT[10][x]=[...EC]; G_EAT[11][x]=[...BD]; G_EAT[12][x]=[...BD]; }
-// 기존 입 지우고 크게 벌린 입 (row 13~15, col 12~17)
-G_EAT[13][12]=[...BD]; G_EAT[13][17]=[...BD];
-G_EAT[13][13]=[...EC]; G_EAT[13][14]=[...EC]; G_EAT[13][15]=[...EC]; G_EAT[13][16]=[...EC];
-G_EAT[14][12]=[...EC]; G_EAT[14][17]=[...EC];
-G_EAT[14][13]=[...EC]; G_EAT[14][14]=[...EC]; G_EAT[14][15]=[...EC]; G_EAT[14][16]=[...EC];
-G_EAT[15][13]=[...EC]; G_EAT[15][14]=[...EC]; G_EAT[15][15]=[...EC]; G_EAT[15][16]=[...EC];
-
-// 잠자기용 스프라이트 (-- 감은눈, 입 없음)
-const G_SLEEP = G.map(r=>r.map(c=>[...c]));
-// -- 눈: 가운데 줄만 남기고 위아래는 몸색
-for(let x=8;x<=10;x++){ G_SLEEP[10][x]=[...BD]; G_SLEEP[11][x]=[...EC]; G_SLEEP[12][x]=[...BD]; }
-for(let x=19;x<=21;x++){ G_SLEEP[10][x]=[...BD]; G_SLEEP[11][x]=[...EC]; G_SLEEP[12][x]=[...BD]; }
-// 입 지우기 (몸색으로)
-G_SLEEP[13][12]=[...BD]; G_SLEEP[13][17]=[...BD];
-G_SLEEP[14][13]=[...BD]; G_SLEEP[14][14]=[...BD]; G_SLEEP[14][15]=[...BD]; G_SLEEP[14][16]=[...BD];
+rebuildSprites();
 
 // 스프라이트를 캔버스에 그리기
 function drawSprite(canvas, grid, scale) {
@@ -214,10 +346,6 @@ function drawSprite(canvas, grid, scale) {
     }
   }
 }
-
-// 정적 렌더
-const staticCvs = document.getElementById('my-canvas');
-drawSprite(staticCvs, G, 5);
 
 // 애니메이션 캔버스
 const idleCvs = document.getElementById('anim-idle');
@@ -361,17 +489,17 @@ function animIdleLoop() {
 
   let egrid, eox=2, eoy=2;
   if(eframe===0) {
-    egrid = G_EAT; // 입 벌린 상태
+    egrid = variants.eat; // 입 벌린 상태
   } else if(eframe===1) {
-    egrid = transformGrid(G_EAT, -1, 1); // 냠 준비
+    egrid = transformGrid(variants.eat, -1, 1); // 냠 준비
     eox=1; eoy=3;
   } else if(eframe===2) {
     egrid = transformGrid(G, 1, -1); // 냠! (입 닫고 세로로)
     eox=3; eoy=1;
   } else if(eframe===3) {
-    egrid = G_EAT; // 다시 벌림
+    egrid = variants.eat; // 다시 벌림
   } else if(eframe===4) {
-    egrid = transformGrid(G_EAT, -1, 1);
+    egrid = transformGrid(variants.eat, -1, 1);
     eox=1; eoy=3;
   } else {
     egrid = transformGrid(G, 1, -1); // 냠!
@@ -418,16 +546,16 @@ function animIdleLoop() {
   sctx.clearRect(0,0,SW,SH);
 
   // 기울어짐: 각 행을 옆으로 1px 밀기
-  let sgrid = G_SLEEP.map(r=>[...r]);
+  let sgrid = variants.sleep.map(r=>[...r]);
   let sox=3, soy=2;
 
   if(sframe===0) {
-    sgrid = G_SLEEP;
+    sgrid = variants.sleep;
     soy=2;
   } else if(sframe===1) {
     soy=1;
-    sgrid = G_SLEEP.map((r,i)=>{
-      const shift = Math.round((1 - i/G_SLEEP.length) * 1);
+    sgrid = variants.sleep.map((r,i)=>{
+      const shift = Math.round((1 - i/variants.sleep.length) * 1);
       const nr = new Array(r.length).fill([0,0,0]);
       for(let x=0;x<r.length;x++){
         const nx = x + shift;
@@ -437,12 +565,12 @@ function animIdleLoop() {
     });
     sox=2;
   } else if(sframe===2) {
-    sgrid = G_SLEEP;
+    sgrid = variants.sleep;
     soy=2;
   } else {
     soy=3;
-    sgrid = G_SLEEP.map((r,i)=>{
-      const shift = -Math.round((1 - i/G_SLEEP.length) * 1);
+    sgrid = variants.sleep.map((r,i)=>{
+      const shift = -Math.round((1 - i/variants.sleep.length) * 1);
       const nr = new Array(r.length).fill([0,0,0]);
       for(let x=0;x<r.length;x++){
         const nx = x + shift;
