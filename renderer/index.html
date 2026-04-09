@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>데스크톱 펫</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===== 캐릭터 생성 화면 ===== -->
+  <div id="creator-screen">
+    <div id="creator-panel">
+      <h1>내 펫 만들기</h1>
+
+      <!-- 미리보기 -->
+      <div id="creator-preview-wrap">
+        <canvas id="creator-preview" width="120" height="120"></canvas>
+      </div>
+
+      <!-- 이름 -->
+      <div class="creator-section">
+        <label>이름</label>
+        <input type="text" id="input-name" placeholder="이름을 지어줘!" maxlength="10" />
+      </div>
+
+      <!-- 몸 색상 -->
+      <div class="creator-section">
+        <label>몸 색상</label>
+        <div class="color-options" data-target="bodyColor">
+          <button class="color-btn active" data-color="#87CEEB" style="background:#87CEEB"></button>
+          <button class="color-btn" data-color="#FF9AA2" style="background:#FF9AA2"></button>
+          <button class="color-btn" data-color="#B5EAD7" style="background:#B5EAD7"></button>
+          <button class="color-btn" data-color="#FFDAC1" style="background:#FFDAC1"></button>
+          <button class="color-btn" data-color="#C7CEEA" style="background:#C7CEEA"></button>
+          <button class="color-btn" data-color="#FFD700" style="background:#FFD700"></button>
+          <button class="color-btn" data-color="#FF6B6B" style="background:#FF6B6B"></button>
+          <button class="color-btn" data-color="#A0D995" style="background:#A0D995"></button>
+          <input type="color" id="custom-bodyColor" class="custom-color" value="#87CEEB" title="직접 선택" />
+        </div>
+      </div>
+
+      <!-- 눈 스타일 -->
+      <div class="creator-section">
+        <label>눈 스타일</label>
+        <div class="style-options" data-target="eyeStyle">
+          <button class="style-btn active" data-value="round">동글이</button>
+          <button class="style-btn" data-value="sparkle">반짝이</button>
+          <button class="style-btn" data-value="sleepy">졸린</button>
+          <button class="style-btn" data-value="sharp">날카로운</button>
+        </div>
+      </div>
+
+      <!-- 눈 색상 -->
+      <div class="creator-section">
+        <label>눈 색상</label>
+        <div class="color-options" data-target="eyeColor">
+          <button class="color-btn active" data-color="#222222" style="background:#222222"></button>
+          <button class="color-btn" data-color="#4A90D9" style="background:#4A90D9"></button>
+          <button class="color-btn" data-color="#D94A4A" style="background:#D94A4A"></button>
+          <button class="color-btn" data-color="#8B5CF6" style="background:#8B5CF6"></button>
+          <button class="color-btn" data-color="#2ECC71" style="background:#2ECC71"></button>
+          <input type="color" id="custom-eyeColor" class="custom-color" value="#222222" title="직접 선택" />
+        </div>
+      </div>
+
+      <!-- 볼터치 -->
+      <div class="creator-section">
+        <label>볼터치</label>
+        <div class="style-options" data-target="cheekStyle">
+          <button class="style-btn active" data-value="pink">분홍</button>
+          <button class="style-btn" data-value="orange">주황</button>
+          <button class="style-btn" data-value="red">빨강</button>
+          <button class="style-btn" data-value="none">없음</button>
+        </div>
+      </div>
+
+      <button id="btn-create">이 아이로 시작하기!</button>
+    </div>
+  </div>
+
+  <!-- ===== 캐릭터 (게임 화면) ===== -->
+  <div id="character-container" class="hidden">
+    <div id="speech-bubble" class="hidden">
+      <span id="speech-text"></span>
+    </div>
+    <canvas id="character" width="64" height="64"></canvas>
+  </div>
+
+  <!-- ===== 모달 ===== -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <div id="modal-header">
+        <span id="modal-name">알</span>
+        <span id="modal-level">Lv. 1</span>
+      </div>
+
+      <div id="modal-stats">
+        <div class="modal-stat">
+          <span class="modal-stat-icon">💛</span>
+          <span class="modal-stat-label">행복도</span>
+          <div class="modal-bar"><div id="bar-happiness" class="bar-fill happiness"></div></div>
+          <span id="val-happiness" class="modal-stat-val">80</span>
+        </div>
+        <div class="modal-stat">
+          <span class="modal-stat-icon">🍖</span>
+          <span class="modal-stat-label">포만감</span>
+          <div class="modal-bar"><div id="bar-hunger" class="bar-fill hunger"></div></div>
+          <span id="val-hunger" class="modal-stat-val">80</span>
+        </div>
+        <div class="modal-stat">
+          <span class="modal-stat-icon">⭐</span>
+          <span class="modal-stat-label">경험치</span>
+          <div class="modal-bar"><div id="bar-exp" class="bar-fill exp"></div></div>
+          <span id="val-exp" class="modal-stat-val">0/10</span>
+        </div>
+      </div>
+
+      <div id="modal-actions">
+        <button data-action="feed">🍖 먹이주기</button>
+        <button data-action="play">🎾 놀아주기</button>
+        <button data-action="pet">💕 쓰다듬기</button>
+        <button data-action="talk">💬 말걸기</button>
+      </div>
+      <button id="modal-quit">종료</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
