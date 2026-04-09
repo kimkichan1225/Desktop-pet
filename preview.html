@@ -104,7 +104,7 @@ function makePalette(hue) {
     body:      hsl2rgb(hue, 85, 74),        // 몸 메인
     highlight: hsl2rgb(hue-10, 70, 85),     // 하이라이트
     eye:       hsl2rgb(hue+20, 60, 23),     // 눈/입
-    cheek:     hsl2rgb(hue-150, 70, 75),    // 볼터치 (보색 계열)
+    cheek:     hsl2rgb(345, 60, 78),         // 볼터치 (분홍 고정)
   };
 }
 
@@ -177,12 +177,6 @@ function applyColors(hue) {
   G[14][12]=[...P.body]; G[14][17]=[...P.body];
   G[15][13]=[...P.body]; G[15][14]=[...P.body]; G[15][15]=[...P.body]; G[15][16]=[...P.body];
 
-  // 4) 볼터치
-  for(let y=14;y<=15;y++){
-    for(let x=6;x<=8;x++) G[y][x]=[...P.cheek];
-    for(let x=21;x<=23;x++) G[y][x]=[...P.cheek];
-  }
-
   // 5) 몸 메인
   for(let y=0;y<25;y++){
     for(let x=0;x<30;x++){
@@ -190,6 +184,12 @@ function applyColors(hue) {
       const br=(c[0]+c[1]+c[2])/3;
       if(br>=170 && br<=215) G[y][x]=[...P.body];
     }
+  }
+
+  // 5-b) 볼터치 (몸 메인 뒤에 다시 찍기)
+  for(let y=14;y<=15;y++){
+    for(let x=6;x<=8;x++) G[y][x]=[...P.cheek];
+    for(let x=21;x<=23;x++) G[y][x]=[...P.cheek];
   }
 
   // 6) 하이라이트
@@ -222,6 +222,8 @@ function applyColors(hue) {
     for(let x=0;x<30;x++){
       const c=G[y][x];
       if(!(c[0]===P.body[0]&&c[1]===P.body[1]&&c[2]===P.body[2])) continue;
+      // 볼터치 영역 제외
+      if(y>=14&&y<=15&&((x>=6&&x<=8)||(x>=21&&x<=23))) continue;
       if(y>=3 && y<=9 && x>=5 && x<=12) continue;
       if(y>=10 && y<=15 && x>=6 && x<=23) continue;
       if(y<11) continue; // 위쪽은 건너뜀 (밝은 영역 유지)
